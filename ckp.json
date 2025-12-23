@@ -1,0 +1,333 @@
+{
+    "procedure_id": "SETTLEMENT_REQUEST_MAINFRAME",
+    "description": "Creates and submits a settlement request for an existing account in the mainframe settlement system, applying business rules, validations, and error recovery flows.",
+    "retrieval_metadata":{
+        "primary_intents":[
+            "create settlement request",
+            "submit settlement request",
+            "initiate settlement request"
+        ],
+        "secondary_intents": [
+            "settlement for account",
+            "raise settlement request",
+            "create settlement for account number"
+          ],
+        "business_domain": "payments",
+        "applicability": {
+        "channel": ["mainframe"],
+        "application_names": ["Attachmate Reflection"],
+        "account_types": ["checking", "savings", "corporate"]
+    },
+    "keywords": ["settlement", "request", "account", "mainframe", "submit"],
+    "negative_intents": ["cancel settlement", "reverse settlement", "check settlement status"]
+    },
+    
+    "version": "1.0.0",
+    "status": "approved",
+    "effective_date": "2025-12-14",
+    "owners": ["ops-automation", "payments-business"],
+  
+    "base_steps": [
+      {
+        "step_id": "S1",
+        "action": "launch_application",
+        "element": "application",
+        "value": "C:\\Program Files (x86)\\Micro Focus\\Reflection\\Attachmate.Emulation.Frame.exe",
+        "application_type": "mainframe",
+        "special_keys": "",
+        "windowName": "",
+        "fieldName": "",
+        "screenName": "",
+        "startX": "",
+        "startY": "",
+        "endX": "",
+        "endY": ""
+      },
+      {
+        "step_id": "S2",
+        "action": "wait_for_element",
+        "element": "mainframe_screen",
+        "value": "Welcome to the *** Network",
+        "application_type": "mainframe",
+        "special_keys": "",
+        "windowName": "Welcome to the *** Network",
+        "fieldName": "Welcome to the *** Network",
+        "screenName": "WELCOME",
+        "startX": "",
+        "startY": "",
+        "endX": "",
+        "endY": ""
+      },
+      {
+        "step_id": "S3",
+        "action": "send_keys",
+        "element": "data_field",
+        "value": "{{tpx_command}}",
+        "application_type": "mainframe",
+        "special_keys": "",
+        "windowName": "TPX MENU FOR IOTSRV4 Panelid - TEN0041",
+        "fieldName": "Command",
+        "screenName": "TPX MENU",
+        "startX": "2",
+        "startY": "2",
+        "endX": "2",
+        "endY": "52"
+      },
+      {
+        "step_id": "S4",
+        "action": "send_keys",
+        "element": "data_field",
+        "value": "{{account_number}}",
+        "application_type": "mainframe",
+        "special_keys": "",
+        "windowName": "SETTLEMENT REQUEST PANEL",
+        "fieldName": "Account Number",
+        "screenName": "SETTLEMENT_REQ",
+        "startX": "10",
+        "startY": "20",
+        "endX": "10",
+        "endY": "35"
+      },
+      {
+        "step_id": "S5",
+        "action": "send_keys",
+        "element": "data_field",
+        "value": "{{account_type}}",
+        "application_type": "mainframe",
+        "special_keys": "",
+        "windowName": "SETTLEMENT REQUEST PANEL",
+        "fieldName": "Account Type",
+        "screenName": "SETTLEMENT_REQ",
+        "startX": "11",
+        "startY": "20",
+        "endX": "11",
+        "endY": "35"
+      },
+      {
+        "step_id": "S6",
+        "action": "send_keys",
+        "element": "data_field",
+        "value": "{{state}}",
+        "application_type": "mainframe",
+        "special_keys": "",
+        "windowName": "SETTLEMENT REQUEST PANEL",
+        "fieldName": "State",
+        "screenName": "SETTLEMENT_REQ",
+        "startX": "12",
+        "startY": "20",
+        "endX": "12",
+        "endY": "35"
+      },
+      {
+        "step_id": "S7",
+        "action": "send_keys",
+        "element": "special_key",
+        "value": "",
+        "application_type": "mainframe",
+        "special_keys": "ENTER",
+        "windowName": "SETTLEMENT REQUEST PANEL",
+        "fieldName": "",
+        "screenName": "SETTLEMENT_REQ",
+        "startX": "",
+        "startY": "",
+        "endX": "",
+        "endY": ""
+      }
+    ],
+  
+    "variables_schema": {
+      "required": {
+        "account_number": {
+          "type": "string",
+          "pattern": "^[0-9]{9,18}$",
+          "description": "Customer account number"
+        }
+      },
+      "optional": {
+        "account_type": {
+          "type": "string",
+          "enum": ["checking", "savings", "corporate"],
+          "default": "checking"
+        },
+        "state": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$",
+          "description": "US state code"
+        },
+        "tpx_command": {
+          "type": "string",
+          "default": "tpx"
+        }
+      }
+    },
+  
+    "rules": [
+      {
+        "rule_id": "R-STATE-CHK-01",
+        "applies_to_step": "S6",
+        "condition": {
+          "field": "account_type",
+          "operator": "equals",
+          "value": "checking"
+        },
+        "constraint": {
+          "field": "state",
+          "allowed_values": ["CA", "UT"]
+        },
+        "severity": "hard_block",
+        "source": {
+          "doc_id": "Settlement_Business_Rules.pdf",
+          "section": "4.1"
+        },
+        "confidence": 0.93
+      },
+      {
+        "rule_id": "R-STATE-NONCHK-01",
+        "applies_to_step": "S6",
+        "condition": {
+          "field": "account_type",
+          "operator": "in",
+          "value": ["savings", "corporate"]
+        },
+        "constraint": {
+          "field": "state",
+          "allowed_values": ["CA", "UT", "NY", "NJ", "TX"]
+        },
+        "severity": "hard_block",
+        "source": {
+          "doc_id": "Settlement_Business_Rules.pdf",
+          "section": "4.2"
+        },
+        "confidence": 0.88
+      },
+      {
+        "rule_id": "R-DEFAULT-ACCOUNT-TYPE",
+        "applies_to_step": "S5",
+        "condition": {
+          "field": "account_type",
+          "operator": "missing",
+          "value": true
+        },
+        "effect": {
+          "set_default": {
+            "account_type": "checking"
+          }
+        },
+        "severity": "soft_prompt",
+        "source": {
+          "doc_id": "Settlement_Business_Rules.pdf",
+          "section": "2.3"
+        },
+        "confidence": 0.9
+      }
+    ],
+  
+    "validations": [
+      {
+        "validation_id": "V-REQ-ACCEPTED-01",
+        "step_id": "S7",
+        "type": "screen_text_check",
+        "expected_text_any": ["Request Accepted", "Settlement Request Created"],
+        "failure_routes_to_exception": "REQUEST_NOT_ACCEPTED",
+        "source": {
+          "doc_id": "Settlement_UI_Guide.docx",
+          "section": "6.1"
+        },
+        "confidence": 0.87
+      }
+    ],
+  
+    "exceptions": [
+      {
+        "exception_code": "SIGNON_FAILURE",
+        "trigger": {
+          "type": "screen_text",
+          "contains": "Sign-On failure"
+        },
+        "severity": "recoverable",
+        "source": {
+          "doc_id": "Ops_Runbook.pdf",
+          "section": "3.2"
+        },
+        "confidence": 0.91
+      },
+      {
+        "exception_code": "REQUEST_NOT_ACCEPTED",
+        "trigger": {
+          "type": "screen_text",
+          "contains_any": ["Request Rejected", "Invalid State", "Validation Error"]
+        },
+        "severity": "recoverable",
+        "source": {
+          "doc_id": "Settlement_UI_Guide.docx",
+          "section": "6.3"
+        },
+        "confidence": 0.8
+      }
+    ],
+  
+    "recovery_flows": [
+      {
+        "recovery_id": "REC-SIGNON-01",
+        "applies_to_exception": "SIGNON_FAILURE",
+        "steps": [
+          { "action": "send_keys", "element": "special_key", "special_keys": "CLEAR" },
+          { "action": "send_keys", "element": "data_field", "value": "{{user_id}}" },
+          { "action": "send_keys", "element": "data_field", "value": "{{password}}" },
+          { "action": "send_keys", "element": "special_key", "special_keys": "ENTER" }
+        ],
+        "required_secrets": ["user_id", "password"],
+        "source": {
+          "doc_id": "Ops_Runbook.pdf",
+          "section": "3.2"
+        },
+        "confidence": 0.86
+      },
+      {
+        "recovery_id": "REC-REQUEST-RETRY-01",
+        "applies_to_exception": "REQUEST_NOT_ACCEPTED",
+        "steps": [
+          {
+            "action": "wait_for_element",
+            "element": "mainframe_screen",
+            "value": "SETTLEMENT REQUEST PANEL"
+          },
+          {
+            "action": "send_keys",
+            "element": "data_field",
+            "value": "{{state}}"
+          },
+          {
+            "action": "send_keys",
+            "element": "special_key",
+            "special_keys": "ENTER"
+          }
+        ],
+        "source": {
+          "doc_id": "Settlement_UI_Guide.docx",
+          "section": "6.3"
+        },
+        "confidence": 0.78
+      }
+    ],
+  
+    "provenance": {
+      "compiled_on": "2025-12-14",
+      "compiler_version": "ckp-compiler/0.1.0",
+      "inputs": {
+        "procedure_json_id": "PROC-SETTLEMENT-BASE-001",
+        "procedure_json_hash": "sha256:REPLACE_ME",
+        "documents": [
+          { "doc_id": "Settlement_Business_Rules.pdf", "doc_version": "3.2", "hash": "sha256:REPLACE_ME" },
+          { "doc_id": "Settlement_UI_Guide.docx", "doc_version": "1.7", "hash": "sha256:REPLACE_ME" },
+          { "doc_id": "Ops_Runbook.pdf", "doc_version": "9.4", "hash": "sha256:REPLACE_ME" }
+        ]
+      },
+      "trace_index": [
+        { "artifact": "R-STATE-CHK-01", "source": "Settlement_Business_Rules.pdf#4.1" },
+        { "artifact": "V-REQ-ACCEPTED-01", "source": "Settlement_UI_Guide.docx#6.1" },
+        { "artifact": "REC-SIGNON-01", "source": "Ops_Runbook.pdf#3.2" }
+      ]
+    }
+  }
+  

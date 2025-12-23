@@ -1,0 +1,160 @@
+{
+  "info": {
+    "name": "Mainframe Agent API",
+    "description": "REST API for Mainframe Agent automation execution",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "mainframe-agent"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        },
+        "description": "Check API health and configuration"
+      },
+      "response": []
+    },
+    {
+      "name": "Execute Steps",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"steps\": [\n    {\n      \"tool\": \"send_keys\",\n      \"arguments\": {\n        \"action\": \"send_keys\",\n        \"element\": \"data_field\",\n        \"value\": \"test123\",\n        \"application_type\": \"mainframe\"\n      }\n    },\n    {\n      \"tool\": \"send_keys\",\n      \"arguments\": {\n        \"action\": \"send_keys\",\n        \"element\": \"special_key\",\n        \"special_keys\": \"ENTER\",\n        \"application_type\": \"mainframe\"\n      }\n    }\n  ],\n  \"config\": {\n    \"mcp_server_url\": \"http://localhost:8000\",\n    \"max_retries\": 3\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/execute/steps",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "execute", "steps"]
+        },
+        "description": "Execute automation steps directly"
+      },
+      "response": []
+    },
+    {
+      "name": "Execute File",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"file_path\": \"{{example_file_path}}\",\n  \"config\": {\n    \"mcp_server_url\": \"http://localhost:8000\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/execute/file",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "execute", "file"]
+        },
+        "description": "Execute automation steps from a JSON file"
+      },
+      "response": []
+    },
+    {
+      "name": "Execute CKP File",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"file_path\": \"{{ckp_file_path}}\",\n  \"variables\": {\n    \"account_number\": \"123456789\",\n    \"account_type\": \"checking\",\n    \"state\": \"CA\",\n    \"tpx_command\": \"tpx\",\n    \"user_id\": \"user123\",\n    \"password\": \"pass123\"\n  },\n  \"config\": {\n    \"mcp_server_url\": \"http://localhost:8000\",\n    \"ollama_url\": \"http://localhost:11434\",\n    \"max_retries\": 5\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/execute/ckp",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "execute", "ckp"]
+        },
+        "description": "Execute CKP format file with variables, rules, validations, and recovery flows"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Execution Plan",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"file_path\": \"{{ckp_file_path}}\",\n  \"variables\": {\n    \"account_number\": \"123456789\",\n    \"account_type\": \"checking\",\n    \"state\": \"CA\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/plan?file_path={{ckp_file_path}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "plan"],
+          "query": [
+            {
+              "key": "file_path",
+              "value": "{{ckp_file_path}}",
+              "description": "Path to JSON/CKP file"
+            }
+          ]
+        },
+        "description": "Get execution plan without executing (preview steps, rules, validations, etc.)"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8001",
+      "type": "string"
+    },
+    {
+      "key": "ckp_file_path",
+      "value": "/Users/prabu_k/Documents/POC/AutomationAgent-support/ckp.json",
+      "type": "string"
+    },
+    {
+      "key": "example_file_path",
+      "value": "/Users/prabu_k/Documents/POC/AutomationAgent-support/example_steps.json",
+      "type": "string"
+    }
+  ]
+}
