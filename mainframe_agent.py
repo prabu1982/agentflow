@@ -1,4 +1,4 @@
-"""Mainframe Agent using LangGraph, MCP Server, and OLLAMA for error recovery with CKP support."""
+"""Mainframe Agent using LangGraph, MCP Server, and TachyonAdk for error recovery with CKP support."""
 
 import logging
 import asyncio
@@ -10,7 +10,7 @@ from langgraph.graph import StateGraph, END
 
 from config import AgentConfig
 from mcp_client import MCPClient
-from ollama_client import OllamaClient
+from tachyonadk_client import TachyonAdkClient
 from step_reader import StepReader
 from ckp_reader import CKPReader
 
@@ -33,7 +33,7 @@ class AgentState(TypedDict):
 
 
 class MainframeAgent:
-    """Mainframe Agent with LangGraph orchestration, MCP execution, and OLLAMA error recovery."""
+    """Mainframe Agent with LangGraph orchestration, MCP execution, and TachyonAdk error recovery."""
     
     def __init__(self, config: Optional[AgentConfig] = None):
         """
@@ -46,7 +46,7 @@ class MainframeAgent:
         
         # Initialize clients
         self.mcp_client = MCPClient(self.config)
-        self.ollama_client = OllamaClient(self.config)
+        self.tachyon_adk_client = TachyonAdkClient(self.config)
         
         # Build LangGraph workflow
         self.workflow = self._build_workflow()
@@ -201,7 +201,7 @@ class MainframeAgent:
                             "field": field,
                             "message": f"{field} must be one of {allowed_values}"
                         }
-                        # For hard blocks, we'll let OLLAMA fix it
+                        # For hard blocks, we'll let TachyonAdk fix it
                     else:
                         logger.warning(f"Rule {rule.get('rule_id')} soft violation for {field}")
             
@@ -287,7 +287,7 @@ class MainframeAgent:
         
         # Map CKP actions to MCP tools
         tool_mapping = {
-            "launch_application": "launch_app",
+            "launch_application": "launch_mainframe_application",
             "wait_for_element": "wait_for_element",
             "send_keys": "send_keys",
             "click": "click",
@@ -489,7 +489,7 @@ class MainframeAgent:
         return state
     
     async def _handle_error(self, state: AgentState) -> AgentState:
-        """Handle errors by requesting fix from OLLAMA."""
+        """Handle errors by requesting fix from TachyonAdk."""
         current_index = state["current_step_index"]
         steps = state["steps"]
         current_step = steps[current_index]
@@ -507,9 +507,9 @@ class MainframeAgent:
             state["decision"] = "stop"
             return state
         
-        # Request fix from OLLAMA
-        logger.info("Requesting error fix from OLLAMA...")
-        fix_result = await self.ollama_client.generate_fix(
+        # Request fix from Google ADK (TachyonAdkClient)
+        logger.info("Requesting error fix from Google ADK (TachyonAdkClient)...")
+        fix_result = await self.tachyon_adk_client.generate_fix(
             step=current_step,
             error=last_result,
             context=state["context"]
@@ -517,9 +517,9 @@ class MainframeAgent:
         
         if fix_result.get("success"):
             state["error_fix"] = fix_result
-            logger.info("Received fix suggestion from OLLAMA")
+            logger.info("Received fix suggestion from Google ADK")
         else:
-            logger.error(f"Failed to get fix from OLLAMA: {fix_result.get('message')}")
+            logger.error(f"Failed to get fix from Google ADK: {fix_result.get('message')}")
             state["error_fix"] = {
                 "success": False,
                 "updated_step": current_step
@@ -528,7 +528,7 @@ class MainframeAgent:
         return state
     
     async def _apply_fix(self, state: AgentState) -> AgentState:
-        """Apply the fix suggested by OLLAMA."""
+        """Apply the fix suggested by TachyonAdk."""
         if state.get("error_fix") and state["error_fix"].get("success"):
             updated_step = state["error_fix"]["updated_step"]
             current_index = state["current_step_index"]
@@ -613,7 +613,7 @@ class MainframeAgent:
             # Retry the step
             return "retry"
         else:
-            # Recovery failed, try OLLAMA fix
+            # Recovery failed, try TachyonAdk fix
             return "fail"
     
     def _check_retry_eligibility(self, state: AgentState) -> str:
@@ -762,11 +762,11 @@ class MainframeAgent:
                         # Retry the step
                         continue
                     else:
-                        # Recovery failed, try OLLAMA
+                        # Recovery failed, try TachyonAdk
                         route = "error"
                 
                 if route == "error":
-                    # Handle error with OLLAMA
+                    # Handle error with TachyonAdk
                     state = await self._handle_error(state)
                     
                     retry_route = self._check_retry_eligibility(state)
@@ -832,7 +832,7 @@ class MainframeAgent:
     async def close(self):
         """Close all clients."""
         await self.mcp_client.close()
-        await self.ollama_client.close()
+        await self.tachyon_adk_client.close()
     
     async def __aenter__(self):
         """Async context manager entry."""
