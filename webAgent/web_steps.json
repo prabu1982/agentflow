@@ -1,0 +1,27 @@
+
+      {
+        "agent": "WebAutomationAgent",
+        "type": "sequence",
+        "description": "Logins to the modern web portal for retail accounts.",
+        "inputs": {
+          "url": "https://portal.bank.internal/settlements",
+          "user_id": "tpx"
+        },
+        "steps": [
+          {
+            "action": "navigate",
+            "value": "{{url}}"
+          },
+          {
+            "action": "wait_for_element",
+            "xpath": "//input[@id='username']"
+          },
+          {
+            "action": "type_into",
+            "xpath": "//input[@id='username']",
+            "value": "{{user_id}}"
+          }
+        ],
+        "next_node": "end_success"
+      }
+
